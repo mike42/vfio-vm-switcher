@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import sys
 import time
 from enum import IntEnum
@@ -71,7 +72,8 @@ async def list_domains(name: str, conn: libvirt.virConnect = Depends(get_conn)) 
     return domain_info(domain)
 
 
-def switch_domain(shutdown: list[str], destroy: list[str], startup: str, conn: libvirt.virConnect):
+def switch_domain(shutdown: list[str], destroy: list[str], conn: libvirt.virConnect, startup: str | None = None,
+                  host_shutdown: bool | None = None):
     # Shut down domains as necessary
     for domain_name in shutdown:
         shutdown_domain = conn.lookupByName(domain_name)
@@ -94,10 +96,15 @@ def switch_domain(shutdown: list[str], destroy: list[str], startup: str, conn: l
                 # Ignore. Expecting this means the domain stopped since last check.
                 pass
 
-    # Start up our domain of interest
-    startup_domain = conn.lookupByName(startup)
-    logger.info("Starting up %s", startup)
-    startup_domain.create()
+    if startup is not None:
+        # Start up our domain of interest
+        startup_domain = conn.lookupByName(startup)
+        logger.info("Starting up %s", startup)
+        startup_domain.create()
+
+    if host_shutdown:
+        logger.info("Attempting to shut down host.")
+        subprocess.call(["/usr/bin/sudo", "/sbin/poweroff"])
 
 
 @app.patch("/domain/{name}")
@@ -113,7 +120,22 @@ async def update_domain(name: str, action: DomainPatchModel, background_tasks: B
     domain_states = {x.name(): DomainState(x.state()[0]) for x in conn.listAllDomains()}
     polite_shutdown = [k for k, v in domain_states.items() if v == DomainState.RUNNING]
     hard_shutdown = [k for k, v in domain_states.items() if v != DomainState.RUNNING and v != DomainState.SHUTOFF]
-    background_tasks.add_task(switch_domain, shutdown=polite_shutdown, destroy=hard_shutdown, startup=name, conn=conn)
+    background_tasks.add_task(switch_domain, shutdown=polite_shutdown, destroy=hard_shutdown, startup=name, conn=conn,
+                              host_shutdown=False)
+    return {"message": "OK"}
+
+
+@app.patch("/host")
+async def update_host(action: DomainPatchModel, background_tasks: BackgroundTasks,
+                      conn: libvirt.virConnect = Depends(get_conn)):
+    if action.state != DomainState.SHUTOFF:
+        raise HTTPException(status_code=400, detail="Only shutting down  host is supported")
+    # Shut down everything!
+    domain_states = {x.name(): DomainState(x.state()[0]) for x in conn.listAllDomains()}
+    polite_shutdown = [k for k, v in domain_states.items() if v == DomainState.RUNNING]
+    hard_shutdown = [k for k, v in domain_states.items() if v != DomainState.RUNNING and v != DomainState.SHUTOFF]
+    background_tasks.add_task(switch_domain, shutdown=polite_shutdown, destroy=hard_shutdown, startup=None,
+                              host_shutdown=True, conn=conn)
     return {"message": "OK"}
 
 
