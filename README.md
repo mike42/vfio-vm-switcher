@@ -21,10 +21,22 @@ python3 -m venv venv/
 
 App is then at `./dist/main`
 
-Invocation via curl:
+Invocation via curl, list domains:
+
+```bash
+curl -Ss http://192.168.122.1:8000/domain
+```
+
+Ask for `testbox-2` to be booted up (everything else will be shut down first)
 
 ```bash
 curl -Ss -X PATCH http://192.168.122.1:8000/domain/testbox-2 -H 'Content-Type: application/json' -d '{"state" : "RUNNING"}'
+```
+
+Ask for everything to be shut off, and for the host to be powered off.
+
+```bash
+curl -Ss -X PATCH http://192.168.122.1:8000/host -H 'Content-Type: application/json' -d '{"state" : "SHUTOFF"}'
 ```
 
 Installation `/opt/vm-switcher`, it is installed via `/etc/systemd/system/vm-switcher.service`:
