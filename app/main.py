@@ -1,14 +1,19 @@
 import logging
+import os
 import subprocess
 import sys
 import time
 from enum import IntEnum
 
+import sys
 import libvirt
 import pydantic
 import uvicorn
 from fastapi import FastAPI, Depends, Response, BackgroundTasks, HTTPException
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import RedirectResponse
+from starlette.staticfiles import StaticFiles
 
 # Logging to stdout
 logger = logging.getLogger(__name__)
@@ -60,13 +65,13 @@ def domain_info(domain: libvirt.virDomain) -> dict:
     }
 
 
-@app.get("/domain")
+@app.get("/api/domain")
 async def list_domains(conn: libvirt.virConnect = Depends(get_conn)) -> list[dict]:
     all_domains: list[libvirt.virDomain] = conn.listAllDomains()
     return [domain_info(x) for x in all_domains]
 
 
-@app.get("/domain/{name}")
+@app.get("/api/domain/{name}")
 async def list_domains(name: str, conn: libvirt.virConnect = Depends(get_conn)) -> dict:
     domain = conn.lookupByName(name)
     return domain_info(domain)
@@ -107,7 +112,7 @@ def switch_domain(shutdown: list[str], destroy: list[str], conn: libvirt.virConn
         subprocess.call(["/usr/bin/sudo", "/sbin/poweroff"])
 
 
-@app.patch("/domain/{name}")
+@app.patch("/api/domain/{name}")
 async def update_domain(name: str, action: DomainPatchModel, background_tasks: BackgroundTasks,
                         conn: libvirt.virConnect = Depends(get_conn)):
     domain = conn.lookupByName(name)
@@ -125,7 +130,7 @@ async def update_domain(name: str, action: DomainPatchModel, background_tasks: B
     return {"message": "OK"}
 
 
-@app.patch("/host")
+@app.patch("/api/host")
 async def update_host(action: DomainPatchModel, background_tasks: BackgroundTasks,
                       conn: libvirt.virConnect = Depends(get_conn)):
     if action.state != DomainState.SHUTOFF:
@@ -139,16 +144,43 @@ async def update_host(action: DomainPatchModel, background_tasks: BackgroundTask
     return {"message": "OK"}
 
 
-@app.get("/domain/{name}/xml")
+@app.get("/api/domain/{name}/xml")
 async def list_domains(name: str, conn: libvirt.virConnect = Depends(get_conn)):
     domain = conn.lookupByName(name)
     domain_xml = domain.XMLDesc()
     return Response(content=domain_xml, media_type="application/xml")
 
 
+class SpaStaticFiles(StaticFiles):
+    """
+    Serve file if exists, otherwise index.html. Equivalent of nginx try_file.
+    Based on https://stackoverflow.com/questions/64493872/how-do-i-serve-a-react-built-front-end-on-a-fastapi-backend
+    """
+    async def get_response(self, path: str, scope):
+        try:
+            # Try to serve requested file
+            return await super().get_response(path, scope)
+        except (HTTPException, StarletteHTTPException) as ex:
+            if ex.status_code == 404:
+                # If it doesn't exist, serve the index instead.
+                return await super().get_response("index.html", scope)
+            else:
+                raise ex
+
+
+# Path detection differs within pyinstaller bundle
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    static_assets_path = os.path.join(getattr(sys, '_MEIPASS'), "ui/dist/ui/browser")
+else:
+    static_assets_path = os.path.join(os.path.dirname(__file__), "../ui/dist/ui/browser")
+
+app.mount("/ui", SpaStaticFiles(directory=static_assets_path, html=True),
+          name="spa-static-files")
+
+
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return RedirectResponse("/ui")
 
 
 if __name__ == "__main__":

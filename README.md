@@ -10,36 +10,54 @@ This is a simple API which runs on the host, and allows the guest ask for itself
 
 Substitute the username `mike` for your own username where applicable. The script assumes you are in the `libvirt` group and can control VM's.
 
-Setup/build.
+Build the UI first:
+
+```bash
+cd ui
+npm install
+npm run build
+```
+
+Next build the python bundle.
 
 ```bash
 sudo apt install libvirt-dev libpython3-dev build-essential
 python3 -m venv venv/
 ./venv/bin/pip install -r requirements.txt
-./venv/bin/pyinstaller --onefile app/main.py
+./venv/bin/pyinstaller --add-data "ui/dist/:ui/dist/" --onefile app/main.py
 ```
 
-App is then at `./dist/main`
+App is then a binary at `./dist/main`
+
+## Invoking API from web
+
+When you run the app, the work-in-progress UI becomes available at http://localhost:8000/ui/.
+
+This is a placeholder, and can't be used for VM control yet.
+
+## Invoking API from command-line
 
 Invocation via curl, list domains:
 
 ```bash
-curl -Ss http://192.168.122.1:8000/domain
+curl -Ss http://192.168.122.1:8000/api/domain
 ```
 
 Ask for `testbox-2` to be booted up (everything else will be shut down first)
 
 ```bash
-curl -Ss -X PATCH http://192.168.122.1:8000/domain/testbox-2 -H 'Content-Type: application/json' -d '{"state" : "RUNNING"}'
+curl -Ss -X PATCH http://192.168.122.1:8000/api/domain/testbox-2 -H 'Content-Type: application/json' -d '{"state" : "RUNNING"}'
 ```
 
 Ask for everything to be shut off, and for the host to be powered off.
 
 ```bash
-curl -Ss -X PATCH http://192.168.122.1:8000/host -H 'Content-Type: application/json' -d '{"state" : "SHUTOFF"}'
+curl -Ss -X PATCH http://192.168.122.1:8000/api/host -H 'Content-Type: application/json' -d '{"state" : "SHUTOFF"}'
 ```
 
-Installation `/opt/vm-switcher`, it is installed via `/etc/systemd/system/vm-switcher.service`:
+Assuming that the binary is in `/opt/vm-switcher`, it may be installed by creating the following `/etc/systemd/system/vm-switcher.service`:
+
+## Installation as service
 
 ```bash
 [Unit]
@@ -60,7 +78,7 @@ systemctl enable vm-switcher
 systemctl start vm-switcher
 ```
 
-To allow `poweroff`, also add `/etc/sudoers.d/00-poweroff`
+Note that full root permissions are not required, though to allow the script to run `poweroff` on the host, you will also need to create `/etc/sudoers.d/00-poweroff`.
 
 ```
 mike ALL=NOPASSWD: /sbin/halt, /sbin/reboot, /sbin/poweroff
