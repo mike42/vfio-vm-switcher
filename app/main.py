@@ -4,8 +4,9 @@ import subprocess
 import sys
 import time
 from enum import IntEnum
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 
-import sys
 import libvirt
 import pydantic
 import uvicorn
@@ -20,8 +21,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-app = FastAPI()
-
+app = FastAPI(
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs"
+)
 
 class DomainState(IntEnum):
     NOSTATE = libvirt.VIR_DOMAIN_NOSTATE
@@ -54,14 +57,22 @@ class DomainPatchModel(BaseModel):
             raise ValueError(f"Error validating choice {e}. Valid choices are: {[x.name for x in DomainState]}")
 
 
+def parse_xml_desc(xml_desc: str) -> Element:
+    tree = ElementTree.fromstring(xml_desc)
+    return tree
+
+
 def domain_info(domain: libvirt.virDomain) -> dict:
     state, _ = domain.state()
+    detail = parse_xml_desc(domain.XMLDesc())
+    title_element = detail.find('title')
     return {
         'id': domain.ID(),
         'uuid': domain.UUIDString(),
         'autostart': domain.autostart() == 1,
         'state': DomainState(state).name,
-        'name': domain.name()
+        'name': domain.name(),
+        'title': domain.name if title_element is None else title_element.text
     }
 
 
@@ -156,6 +167,7 @@ class SpaStaticFiles(StaticFiles):
     Serve file if exists, otherwise index.html. Equivalent of nginx try_file.
     Based on https://stackoverflow.com/questions/64493872/how-do-i-serve-a-react-built-front-end-on-a-fastapi-backend
     """
+
     async def get_response(self, path: str, scope):
         try:
             # Try to serve requested file
