@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterOutlet} from '@angular/router';
 import {ApiService, DomainSummary} from "./api.service";
@@ -9,24 +9,42 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {MatToolbarModule} from "@angular/material/toolbar";
 
+import _ from "lodash";
+import {Observable, retry, share, Subject, switchMap, takeUntil, timer} from "rxjs";
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, MatSlideToggleModule, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule, MatToolbarModule],
+  imports: [CommonModule, RouterOutlet, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule, MatToolbarModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   domainList: DomainSummary[] | null = null;
   displayedColumns: string[] = ['name', 'action'];
+
+  private domainFeed: Observable<DomainSummary[]> | null = null;
+  private stopDomainFeed = new Subject();
 
   constructor(private apiService: ApiService) {
   }
 
-  ngOnInit(): void {
-    this.apiService.getDomains().subscribe(data => {
-      this.domainList = data;
+  ngOnInit() {
+    this.domainFeed = timer(1, 1500).pipe(
+      switchMap(() => this.apiService.getDomains()),
+      retry({delay: 3000}),
+      takeUntil(this.stopDomainFeed)
+    );
+    this.domainFeed.subscribe(data => {
+      if (!_.isEqual(data, this.domainList)) {
+        // Update only when changed
+        this.domainList = data;
+      }
     })
+  }
+
+  ngOnDestroy() {
+    this.stopDomainFeed.next({});
   }
 
   switchTo(domain: DomainSummary) {

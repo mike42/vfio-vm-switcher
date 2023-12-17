@@ -26,6 +26,7 @@ app = FastAPI(
     docs_url="/api/docs"
 )
 
+
 class DomainState(IntEnum):
     NOSTATE = libvirt.VIR_DOMAIN_NOSTATE
     RUNNING = libvirt.VIR_DOMAIN_RUNNING
@@ -79,7 +80,8 @@ def domain_info(domain: libvirt.virDomain) -> dict:
 @app.get("/api/domain")
 async def list_domains(conn: libvirt.virConnect = Depends(get_conn)) -> list[dict]:
     all_domains: list[libvirt.virDomain] = conn.listAllDomains()
-    return [domain_info(x) for x in all_domains]
+    result = [domain_info(x) for x in all_domains]
+    return sorted(result, key=lambda x: x['name'])
 
 
 @app.get("/api/domain/{name}")

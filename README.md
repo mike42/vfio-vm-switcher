@@ -83,3 +83,9 @@ Note that full root permissions are not required, though to allow the script to 
 ```
 mike ALL=NOPASSWD: /sbin/halt, /sbin/reboot, /sbin/poweroff
 ```
+
+## License
+
+Except as noted below, the files in this repository is Copyright (c) 2023 Michael Billington, and may be used under the MIT license. Please see the LICENSE file in this repository for details.
+
+The favicon used for this project's web interface is derived from `blobs-l.svg` from [gnome-backgrounds], originally by Jakub Steiner, and is licensed under Creative Commons Attribution-ShareAlike 3.0 License.
