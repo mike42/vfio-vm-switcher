@@ -86,6 +86,9 @@ mike ALL=NOPASSWD: /sbin/halt, /sbin/reboot, /sbin/poweroff
 
 ## License
 
-Except as noted below, the files in this repository is Copyright (c) 2023 Michael Billington, and may be used under the MIT license. Please see the LICENSE file in this repository for details.
+The VFIO VM Switcher is licesnsed under the GNU General Public License version 2 or later. Please see the LICENSE file in this repository for details.
 
-The favicon used for this project's web interface is derived from `blobs-l.svg` from [gnome-backgrounds], originally by Jakub Steiner, and is licensed under Creative Commons Attribution-ShareAlike 3.0 License.
+Some files incorporated in this project are derived from other open source codebases:
+
+- The favicon used for this project's web interface is derived from `blobs-l.svg` from [gnome-backgrounds], originally by Jakub Steiner, and is licensed under Creative Commons Attribution-ShareAlike 3.0 License.
+- The VFIO VM switcher GNOME extension in this repository is derived from a template from the GNOME shell extensions tool (a subproject of [GNOME Shell](https://gitlab.gnome.org/GNOME/gnome-shell)), and is licensed under the GNU GPL version 2 or later.
