@@ -1,0 +1,8 @@
+{
+  "name": "VM Switcher",
+  "description": "Control of VFIO virtual machines from within VFIO virtual machines.",
+  "uuid": "vfiovmswitcher@mike42.me",
+  "shell-version": [
+    "44"
+  ]
+}
