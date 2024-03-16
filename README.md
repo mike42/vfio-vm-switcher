@@ -4,7 +4,7 @@ Allow control of VFIO virtual machines from within VFIO virtual machines.
 
 This is designed for situations where you have multiple VM definitions which use the same hardware, so only one can be powered on at a time.
 
-This is a simple API which runs on the host, and allows the guest ask for itself to be shut down, and have a different VM booted up instead. This allows the user to swap between VM's without switching mouse/keyboard/monitor input to the host operating system.
+This repository contains a simple API which runs on the host, and allows the guest ask for itself to be shut down, and have a different VM booted up instead. This allows a user of a VM with GPU passthrough to swap to a different VM, without needing to switch mouse/keyboard/monitor input to the host operating system.
 
 ## Installation notes
 
@@ -31,9 +31,13 @@ App is then a binary at `./dist/main`
 
 ## Invoking API from web
 
-When you run the app, the work-in-progress UI becomes available at http://localhost:8000/ui/.
+When you run the app, a simple web UI becomes available on port 8000 on all interfaces. If you are using the default libvirt network, the URL to bookmark in the guests is http://192.168.122.1:8000/ui/. 
 
-This is a placeholder, and can't be used for VM control yet.
+This displays a list of VM's, each with a start button next to it. When you start a VM, the host will first shut down anything else that is running, and start up the requested VM.
+
+![VFIO VM Switcher web UI](screenshot/vfio_vm_switcher_web_ui.png)
+
+The other buttons power off the host, and display the API docs.
 
 ## Invoking API from command-line
 
@@ -84,9 +88,15 @@ Note that full root permissions are not required, though to allow the script to 
 mike ALL=NOPASSWD: /sbin/halt, /sbin/reboot, /sbin/poweroff
 ```
 
+## GNOME extension
+
+Rudimentary GNOME integration is available via an extension, which may be installed locally by coping the `vfiovmswitcher@mike42.me` directory from `gnome-integration/` to `~/.local/share/gnome-shell/extensions/`.
+
+This provides a panel indicator which allows quick VM switching Linux guests running GNOME 44.
+
 ## License
 
-The VFIO VM Switcher is licesnsed under the GNU General Public License version 2 or later. Please see the LICENSE file in this repository for details.
+The VFIO VM Switcher is licensed under the GNU General Public License version 2 or later. Please see the LICENSE file in this repository for details.
 
 Some files incorporated in this project are derived from other open source codebases:
 
