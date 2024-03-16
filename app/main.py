@@ -85,7 +85,7 @@ async def list_domains(conn: libvirt.virConnect = Depends(get_conn)) -> list[dic
 
 
 @app.get("/api/domain/{name}")
-async def list_domains(name: str, conn: libvirt.virConnect = Depends(get_conn)) -> dict:
+async def get_domain(name: str, conn: libvirt.virConnect = Depends(get_conn)) -> dict:
     domain = conn.lookupByName(name)
     return domain_info(domain)
 
@@ -158,7 +158,7 @@ async def update_host(action: DomainPatchModel, background_tasks: BackgroundTask
 
 
 @app.get("/api/domain/{name}/xml")
-async def list_domains(name: str, conn: libvirt.virConnect = Depends(get_conn)):
+async def get_domain_xml(name: str, conn: libvirt.virConnect = Depends(get_conn)):
     domain = conn.lookupByName(name)
     domain_xml = domain.XMLDesc()
     return Response(content=domain_xml, media_type="application/xml")
