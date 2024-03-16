@@ -35,7 +35,7 @@ When you run the app, a simple web UI becomes available on port 8000 on all inte
 
 This displays a list of VM's, each with a start button next to it. When you start a VM, the host will first shut down anything else that is running, and start up the requested VM.
 
-<img src="https://raw.githubusercontent.com/mike42/vfio-vm-switcher/main/screenshot/vfio_vm_switcher_web_ui.png" width="200px" alt="VFIO VM Switcher web UI" />
+<img src="https://raw.githubusercontent.com/mike42/vfio-vm-switcher/main/screenshot/vfio_vm_switcher_web_ui.png" width="550" alt="VFIO VM Switcher web UI" />
 
 The other buttons power off the host, and display the API docs.
 
