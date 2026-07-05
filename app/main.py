@@ -75,7 +75,7 @@ def domain_info(domain: libvirt.virDomain) -> dict:
         'state': DomainState(state).name,
         'name': domain.name(),
         'title': domain.name() if title_element is None else title_element.text,
-        'is_desktop': len(hostdev_elements) > 0
+        'is_desktop': len(hostdev_elements) > 0 and not domain.name().startswith['server-']
     }
 
 
